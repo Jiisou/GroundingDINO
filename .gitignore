@@ -144,3 +144,6 @@ grounding/version.py
 
 vis/
 tmp/
+
+*.mp4
+results/
