@@ -146,4 +146,5 @@ vis/
 tmp/
 
 *.mp4
-results/
+*results*/
+target*/
