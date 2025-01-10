@@ -126,7 +126,7 @@ def annotate(image_source: np.ndarray, boxes: torch.Tensor, logits: torch.Tensor
     # 레이블 설정 조정
     label_annotator = sv.LabelAnnotator(
         color_lookup=sv.ColorLookup.INDEX,
-        text_padding=2,   # 텍스트 패딩
+        text_padding=3,   # 텍스트 패딩
     )
 
     annotated_frame = cv2.cvtColor(image_source, cv2.COLOR_RGB2BGR)
