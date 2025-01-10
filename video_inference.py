@@ -1,31 +1,42 @@
 import cv2
-from groundingdino.util.inference import load_model, load_image, predict, annotate
+from groundingdino.util.inference import load_model, predict, annotate
 import os
 from PIL import Image
 from torchvision import transforms
 import torch
 from tqdm import tqdm
 
-
 # 모델 로딩
 model = load_model("groundingdino/config/GroundingDINO_SwinT_OGC.py", "/home/work/GroundingDINO/weights/groundingdino_swint_ogc.pth")
 
-# 비디오 경로와 출력 디렉토리 설정
-VIDEO_PATH = "/home/work/GroundingDINO/video/tuktuk_01.mp4"
-OUTPUT_DIR = "/home/work/GroundingDINO/video/results"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+# 비디오 경로와 출력 비디오 설정
+INPUT_VIDEO_PATH = "/home/work/GroundingDINO/video/tuktuk_01.mp4"
 
-TEXT_PROMPT = "car . bus . truck . motorcycle . tuktuk" #indonesia traffic measurement pjt
-BOX_TRESHOLD = 0.35
-TEXT_TRESHOLD = 0.25
+filename = INPUT_VIDEO_PATH.split("/")[-1] #cat_dog.jpeg
+vid_name = filename.split(".")[0]
+OUTPUT_VIDEO_PATH = f"/home/work/GroundingDINO/video/results/{vid_name}_infer.mp4"
 
 # 비디오 파일 열기
-cap = cv2.VideoCapture(VIDEO_PATH)
+cap = cv2.VideoCapture(INPUT_VIDEO_PATH)
+
+# 비디오의 총 프레임 수와 프레임 크기 가져오기
+total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+# 비디오 출력 파일 설정
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # mp4 비디오 코덱
+out = cv2.VideoWriter(OUTPUT_VIDEO_PATH, fourcc, 30.0, (frame_width, frame_height))  # 초당 30프레임
+
+TEXT_PROMPT = "car . bus . truck . motorcycle . tuktuk"  # indonesia traffic measurement pjt
+BOX_TRESHOLD = 0.35
+TEXT_TRESHOLD = 0.25
 
 # 프레임 번호 초기화
 frame_num = 0
 
-while True:
+# tqdm을 사용하여 진행 상황 표시
+for frame_num in tqdm(range(total_frames), desc="Processing frames", ncols=100):
     ret, frame = cap.read()
     if not ret:
         break  # 비디오 끝
@@ -54,15 +65,11 @@ while True:
     # 객체 탐지 결과를 이미지에 주석 추가
     annotated_frame = annotate(image_source=image_source, boxes=boxes, logits=logits, phrases=phrases)
 
-    # 결과를 저장할 파일 경로 설정
-    output_filename = os.path.join(OUTPUT_DIR, f"frame_{frame_num:04d}.jpg")
-    
-    # 주석이 달린 프레임 저장
-    cv2.imwrite(output_filename, annotated_frame)
-
-    # 프레임 번호 증가
-    frame_num += 1
+    # 주석이 달린 프레임을 비디오 출력에 추가
+    out.write(annotated_frame)
 
 # 비디오 파일 닫기
 cap.release()
-print(f"프레임 단위 객체 탐지 완료! 출력 폴더: {OUTPUT_DIR}")
+out.release()
+
+print(f"비디오 객체 탐지 완료! 출력 비디오 파일: {OUTPUT_VIDEO_PATH}")
